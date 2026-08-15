@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSC Clothes</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage-compat.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        
+        body { background: #f5f5f5; }
+        
+        /* Login Page */
+        .page { display: none; padding: 20px; max-width: 500px; margin: auto; }
+        .page.active { display: block; }
+        
+        .login-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-top: 50px; }
+        .login-container h1 { color: #333; margin-bottom: 10px; }
+        .login-container .logo { width: 120px; margin: 10px auto; display: block; }
+        .login-container input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
+        .login-container button { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-facebook { background: #1877f2; color: white; }
+        .btn-google { background: #db4437; color: white; }
+        
+        /* Like Screen */
+        #like-screen { text-align: center; padding: 100px 20px; }
+        #like-screen h2 { font-size: 28px; color: #333; margin-bottom: 30px; }
+        #like-screen .like-btn { background: #ff4757; color: white; padding: 20px 50px; border: none; border-radius: 50px; font-size: 24px; cursor: pointer; box-shadow: 0 5px 20px rgba(255, 71, 87, 0.4); }
+        
+        /* Main Content */
+        .header { background: white; padding: 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
+        .header img { height: 40px; }
+        .header h2 { color: #333; font-size: 20px; }
+        
+        .search-bar { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 25px; font-size: 16px; margin: 15px 0; }
+        
+        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 80px; }
+        .product-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .product-card img { width: 100%; height: 200px; object-fit: cover; }
+        .product-card .info { padding: 12px; }
+        .product-card .price { color: #007bff; font-size: 20px; font-weight: bold; margin: 5px 0; }
+        .product-card .desc { color: #666; font-size: 14px; margin: 5px 0; }
+        .product-card .order-btn { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; margin-top: 5px; }
+        
+        /* Bottom Navigation */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 20; }
+        .bottom-nav button { background: none; border: none; font-size: 24px; cursor: pointer; padding: 8px 15px; border-radius: 10px; }
+        .bottom-nav button.active { background: #007bff; color: white; }
+        
+        /* Upload Page */
+        .upload-form { background: white; padding: 20px; border-radius: 15px; }
+        .upload-form input, .upload-form textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
+        .upload-form textarea { height: 80px; }
+        
+        /* Orders Page */
+        .order-item { background: white; padding: 15px; border-radius: 10px; margin: 10px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .order-item .status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-pending { background: #ffc107; color: #333; }
+        .status-completed { background: #28a745; color: white; }
+        
+        /* Profile */
+        .profile-card { background: white; padding: 30px; border-radius: 15px; text-align: center; }
+        .profile-card .avatar { font-size: 80px; }
+        .profile-card .info { margin: 15px 0; }
+        .profile-card .info p { margin: 10px 0; color: #555; }
+        .contact-info { background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0; }
+        .contact-info p { margin: 5px 0; color: #333; }
+        
+        /* Toast Notification */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 15px 30px; border-radius: 10px; z-index: 100; display: none; }
+        
+        @media (max-width: 600px) { .product-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 400px) { .product-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast"></div>
+
+<!-- ==================== PAGE 1: LOGIN ==================== -->
+<div id="loginPage" class="page active">
+    <div class="login-container">
+        <h1>👕 Welcome to</h1>
+        <h1 style="color: #007bff;">FSC Clothes</h1>
+        <img src="https://via.placeholder.com/120x120/007bff/white?text=FSC" alt="FSC Logo" class="logo">
+        
+        <input type="email" id="loginEmail" placeholder="Email Address">
+        <input type="password" id="loginPassword" placeholder="Password">
+        
+        <button class="btn-primary" onclick="loginUser()">Login</button>
+        <button class="btn-success" onclick="signupUser()">Create Account</button>
+        <button class="btn-google" onclick="googleLogin()">🔴 Login with Google</button>
+        <button class="btn-facebook" onclick="facebookLogin()">🔵 Login with Facebook</button>
+    </div>
+</div>
+
+<!-- ==================== PAGE 2: LIKE SCREEN ==================== -->
+<div id="likePage" class="page">
+    <div id="like-screen">
+        <h2>❤️ Like Our Page to Continue</h2>
+        <p style="color: #666; margin: 20px 0;">Please show your support by liking FSC Clothes</p>
+        <button class="like-btn" onclick="likePage()">👍 Like FSC Clothes</button>
+    </div>
+</div>
+
+<!-- ==================== PAGE 3: HOME (Products) ==================== -->
+<div id="homePage" class="page">
+    <div class="header">
+        <img src="https://via.placeholder.com/40x40/007bff/white?text=FSC" alt="Logo">
+        <h2>FSC Clothes</h2>
+    </div>
+    
+    <div style="padding: 0 15px;">
+        <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search clothes..." onkeyup="searchProducts()">
+        
+        <div id="productGrid" class="product-grid"></div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button class="active" onclick="showPage('homePage')">🏠</button>
+        <button onclick="showPage('uploadPage')">➕</button>
+        <button onclick="showPage('ordersPage')">📦</button>
+        <button onclick="showPage('profilePage')">👤</button>
+    </div>
+</div>
+
+<!-- ==================== PAGE 4: UPLOAD ==================== -->
+<div id="uploadPage" class="page">
+    <div class="header">
+        <img src="https://via.placeholder.com/40x40/007bff/white?text=FSC" alt="Logo">
+        <h2>Add New Product</h2>
+    </div>
+    
+    <div style="padding: 15px;">
+        <div class="upload-form">
+            <input type="text" id="productPrice" placeholder="💰 Price (e.g., 1500)">
+            <textarea id="productDesc" placeholder="📝 Description (e.g., Cotton Shirt Summer)"></textarea>
+            <input type="file" id="productImage" accept="image/*">
+            <button class="btn-primary" onclick="uploadProduct()" style="width:100%;">📤 Upload Product</button>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button onclick="showPage('homePage')">🏠</button>
+        <button class="active" onclick="showPage('uploadPage')">➕</button>
+        <button onclick="showPage('ordersPage')">📦</button>
+        <button onclick="showPage('profilePage')">👤</button>
+    </div>
+</div>
+
+<!-- ==================== PAGE 5: ORDERS ==================== -->
+<div id="ordersPage" class="page">
+    <div class="header">
+        <img src="https://via.placeholder.com/40x40/007bff/white?text=FSC" alt="Logo">
+        <h2>📦 Orders</h2>
+    </div>
+    
+    <div style="padding: 15px;">
+        <div id="ordersList"></div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button onclick="showPage('homePage')">🏠</button>
+        <button onclick="showPage('uploadPage')">➕</button>
+        <button class="active" onclick="showPage('ordersPage')">📦</button>
+        <button onclick="showPage('profilePage')">👤</button>
+    </div>
+</div>
+
+<!-- ==================== PAGE 6: PROFILE ==================== -->
+<div id="profilePage" class="page">
+    <div class="header">
+        <img src="https://via.placeholder.com/40x40/007bff/white?text=FSC" alt="Logo">
+        <h2>My Profile</h2>
+    </div>
+    
+    <div style="padding: 15px;">
+        <div class="profile-card">
+            <div class="avatar">👤</div>
+            <h3 id="userName">User</h3>
+            <p id="userEmail" style="color: #666;">email@example.com</p>
+            
+            <div class="contact-info">
+                <h4>📞 Contact Us</h4>
+                <p>📱 03172471298</p>
+                <p>📱 03123901745</p>
+                <p>📸 Instagram: <strong>FSC Clothes</strong></p>
+                <p>📘 Facebook: <strong>FSC Clothes</strong></p>
+            </div>
+            
+            <button class="btn-danger" onclick="logoutUser()" style="width:100%;">🚪 Logout</button>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button onclick="showPage('homePage')">🏠</button>
+        <button onclick="showPage('uploadPage')">➕</button>
+        <button onclick="showPage('ordersPage')">📦</button>
+        <button class="active" onclick="showPage('profilePage')">👤</button>
+    </div>
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+    // ========== FIREBASE CONFIG (APNI DAALO) ==========
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // ========== GLOBAL VARIABLES ==========
+    let currentUser = null;
+    let isLiked = false;
+
+    // ========== TOAST NOTIFICATION ==========
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        toast.style.background = '#333';
+        setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    // ========== PAGE NAVIGATION ==========
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+    }
+
+    // ========== AUTH STATE ==========
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userName').textContent = user.displayName || 'User';
+            
+            // Check if liked
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists && doc.data().liked) {
+                    isLiked = true;
+                    showPage('homePage');
+                    loadProducts();
+                } else {
+                    showPage('likePage');
+                }
+            }).catch(() => showPage('likePage'));
+        } else {
+            showPage('loginPage');
+        }
+    });
+
+    // ========== LOGIN FUNCTIONS ==========
+    function loginUser() {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPassword').value;
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(() => showToast('✅ Login successful!'))
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    function signupUser() {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPassword').value;
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then(() => showToast('✅ Account created!'))
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    function googleLogin() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then(() => showToast('✅ Google login successful!'))
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    function facebookLogin() {
+        const provider = new firebase.auth.FacebookAuthProvider();
+        auth.signInWithPopup(provider)
+            .then(() => showToast('✅ Facebook login successful!'))
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    function logoutUser() {
+        auth.signOut();
+        showToast('👋 Logged out');
+    }
+
+    // ========== LIKE FUNCTION ==========
+    function likePage() {
+        if (!currentUser) return;
+        isLiked = true;
+        db.collection('users').doc(currentUser.uid).set({ liked: true }, { merge: true })
+            .then(() => {
+                showToast('❤️ Thanks for liking FSC Clothes!');
+                showPage('homePage');
+                loadProducts();
+            });
+    }
+
+    // ========== LOAD PRODUCTS ==========
+    function loadProducts() {
+        db.collection('products').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                grid.innerHTML += `
+                    <div class="product-card" data-name="${data.description.toLowerCase()}">
+                        <img src="${data.image}" alt="Product">
+                        <div class="info">
+                            <div class="price">💰 Rs. ${data.price}</div>
+                            <div class="desc">${data.description}</div>
+                            <button class="order-btn" onclick="placeOrder('${doc.id}', '${data.description}', '${data.price}')">
+                                🛒 Order Now
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+    }
+
+    // ========== SEARCH ==========
+    function searchProducts() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const cards = document.querySelectorAll('.product-card');
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name') || '';
+            card.style.display = name.includes(query) ? 'block' : 'none';
+        });
+    }
+
+    // ========== PLACE ORDER ==========
+    function placeOrder(productId, desc, price) {
+        if (!currentUser) {
+            showToast('❌ Please login first');
+            return;
+        }
+        
+        const orderData = {
+            productId: productId,
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            description: desc,
+            price: price,
+            status: 'pending',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        db.collection('orders').add(orderData)
+            .then(() => {
+                showToast('✅ Order placed! Owner will contact you.');
+                // Owner phone pe notification (simulate)
+                console.log('📞 New Order! Contact: 03172471298, 03123901745');
+            })
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    // ========== UPLOAD PRODUCT ==========
+    function uploadProduct() {
+        const file = document.getElementById('productImage').files[0];
+        const price = document.getElementById('productPrice').value;
+        const desc = document.getElementById('productDesc').value;
+        
+        if (!file || !price || !desc) {
+            showToast('❌ Please fill all fields');
+            return;
+        }
+        
+        const ref = storage.ref('products/' + Date.now() + '_' + file.name);
+        ref.put(file).then(snapshot => snapshot.ref.getDownloadURL())
+            .then(url => {
+                db.collection('products').add({
+                    image: url,
+                    price: price,
+                    description: desc,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    showToast('✅ Product uploaded successfully!');
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productDesc').value = '';
+                    document.getElementById('productImage').value = '';
+                    showPage('homePage');
+                });
+            })
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    // ========== LOAD ORDERS ==========
+    function loadOrders() {
+        db.collection('orders').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
+            const list = document.getElementById('ordersList');
+            list.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const statusClass = data.status === 'completed' ? 'status-completed' : 'status-pending';
+                list.innerHTML += `
+                    <div class="order-item">
+                        <p><strong>${data.description}</strong></p>
+                        <p>💰 Rs. ${data.price}</p>
+                        <p>👤 ${data.userEmail || 'Guest'}</p>
+                        <span class="status ${statusClass}">${data.status.toUpperCase()}</span>
+                        <button onclick="updateOrder('${doc.id}')" style="margin-left:10px;padding:5px 15px;border:none;border-radius:5px;background:#007bff;color:white;cursor:pointer;">
+                            ✅ Complete
+                        </button>
+                    </div>
+                `;
+            });
+        });
+    }
+
+    // ========== UPDATE ORDER STATUS ==========
+    function updateOrder(orderId) {
+        db.collection('orders').doc(orderId).update({ status: 'completed' })
+            .then(() => showToast('✅ Order completed!'))
+            .catch(err => showToast('❌ ' + err.message));
+    }
+
+    // ========== LOAD ORDERS WHEN PAGE SHOWS ==========
+    // Override showPage to load orders when orders page is opened
+    const originalShowPage = showPage;
+    showPage = function(pageId) {
+        originalShowPage(pageId);
+        if (pageId === 'ordersPage') {
+            loadOrders();
+        }
+    };
+
+    // ========== INIT ==========
+    console.log('👕 FSC Clothes App Loaded');
+    console.log('📞 Contact: 03172471298, 03123901745');
+    console.log('📸 Instagram: FSC Clothes');
+    console.log('📘 Facebook: FSC Clothes');
+</script>
+</body>
+</html>
