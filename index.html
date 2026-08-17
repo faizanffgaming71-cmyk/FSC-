@@ -223,9 +223,25 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+    <script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCgrlwTpggeQAJq45zbtSI8PbOqQMJsIpE",
+    authDomain: "fsc-clothes-baa47.firebaseapp.com",
+    projectId: "fsc-clothes-baa47",
+    storageBucket: "fsc-clothes-baa47.firebasestorage.app",
+    messagingSenderId: "248562028019",
+    appId: "1:248562028019:web:0c73212f3538f9f4c0d686"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
 
     // ========== GLOBAL VARIABLES ==========
     let currentUser = null;
