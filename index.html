@@ -227,8 +227,7 @@
   };
 
   // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
+  firebase.initializeApp(firebaseConfig);
     // ========== AUTH STATE ==========
     auth.onAuthStateChanged(user => {
         if (user) {
